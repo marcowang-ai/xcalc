@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FLOW(E)XTENSIONS — Pricing & Calculator</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- React + Babel CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fraunces:wght@500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --flowe-bg: #FAF9F6;
+      --flowe-fg: #0E0E0E;
+      --flowe-muted: #6B6B6B;
+      --flowe-border: #E5E5E5;
+      --flowe-card: #FFFFFF;
+      --flowe-accent: #0E0E0E;
+    }
+    html, body, main { color: var(--flowe-fg); background: var(--flowe-bg); }
+    .flowe-serif { font-family: 'Fraunces', ui-serif, Georgia, serif; letter-spacing: -0.01em; }
+    .flowe-sans { font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans'; }
+    .flowe-muted { color: var(--flowe-muted); }
+    .flowe-border { border-color: var(--flowe-border); }
+    .pill { border: 1px solid var(--flowe-border); border-radius: 9999px; padding: 4px 10px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useMemo } = React;
+
+    const HOURLY = { L1: 85, L2: 100, L3: 150 };
+    const KTIP_PRICE = { standard: 6.25, alacarte: 11 };
+    const WEFT_PRICE = { "18": 180, "22": 210 };
+    const MOVE_UP_PER_ROW = 150;
+
+    function Currency({ amount }) {
+      return <span>{amount.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>;
+    }
+
+    function Stat({ label, value }) {
+      return (
+        <div className="flex justify-between text-sm">
+          <span className="flowe-muted">{label}</span>
+          <span className="font-medium">{value}</span>
+        </div>
+      );
+    }
+
+    function KTipCalculator() {
+      const [level, setLevel] = useState("L1");
+      const [pieces, setPieces] = useState(120);
+
+      const estHours = useMemo(() => {
+        if (pieces <= 60) return 1;
+        if (pieces <= 120) return 2;
+        if (pieces <= 300) return 3.5;
+        const extra = pieces - 300;
+        return 3.5 + (extra / 60) * 0.6;
+      }, [pieces]);
+
+      const perPiece = pieces < 60 ? KTIP_PRICE.alacarte : KTIP_PRICE.standard;
+      const hairCost = pieces * perPiece;
+      const labor = estHours * HOURLY[level];
+      const total = hairCost + labor;
+
+      return (
+        <div className="border flowe-border rounded-2xl p-5 space-y-4 bg-white">
+          <div className="flex justify-between">
+            <h3 className="font-semibold flowe-serif text-lg">K-Tip Calculator</h3>
+            <span className="pill">{pieces < 60 ? 'A la carte' : 'Standard pricing'}</span>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-4">
+            <select className="border p-2 rounded-xl"
+              value={level} onChange={e=>setLevel(e.target.value)}>
+              <option value="L1">Level 1 ($85/hr)</option>
+              <option value="L2">Level 2 ($100/hr)</option>
+              <option value="L3">Level 3 ($150/hr)</option>
+            </select>
+            <input type="range" min="6" max="360" step="6"
+              value={pieces} onChange={e=>setPieces(parseInt(e.target.value))}
+              className="w-full"/>
+            <div className="border flowe-border p-3 rounded-xl">
+              <Stat label="Pieces" value={pieces} />
+              <Stat label="Est. Hours" value={`${estHours.toFixed(1)}h`} />
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="border flowe-border p-3 rounded-xl">
+              <Stat label="Labor" value={<Currency amount={labor}/>} />
+            </div>
+            <div className="border flowe-border p-3 rounded-xl">
+              <Stat label="Hair" value={<Currency amount={hairCost}/>} />
+            </div>
+            <div className="border bg-black text-white p-3 rounded-xl">
+              <Stat label="Total" value={<Currency amount={total}/>} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function WeftCalculator() {
+      const [level, setLevel] = useState("L3");
+      const [rows, setRows] = useState(2);
+      const [wpr, setWpr] = useState(3);
+      const [length, setLength] = useState("18");
+
+      const totalWefts = rows * wpr;
+      const hours = rows === 1 ? 2 : 3;
+      const hairCost = totalWefts * WEFT_PRICE[length];
+      const labor = hours * HOURLY[level];
+      const total = hairCost + labor;
+
+      return (
+        <div className="border flowe-border rounded-2xl p-5 space-y-4 bg-white">
+          <div className="flex justify-between">
+            <h3 className="font-semibold flowe-serif text-lg">Wefts Calculator</h3>
+            <span className="pill">Min. 3 wefts</span>
+          </div>
+
+          <div className="grid md:grid-cols-4 gap-4">
+            <select className="border p-2 rounded-xl" value={level} onChange={e=>setLevel(e.target.value)}>
+              <option value="L1">L1</option>
+              <option value="L2">L2</option>
+              <option value="L3">L3</option>
+            </select>
+            <select className="border p-2 rounded-xl" value={rows} onChange={e=>setRows(parseInt(e.target.value))}>
+              <option value="1">1 Row</option>
+              <option value="2">2 Rows</option>
+            </select>
+            <input type="range" min="3" max="6" value={wpr} onChange={e=>setWpr(parseInt(e.target.value))}/>
+            <select className="border p-2 rounded-xl" value={length} onChange={e=>setLength(e.target.value)}>
+              <option value="18">18"</option>
+              <option value="22">22"</option>
+            </select>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="border flowe-border p-3 rounded-xl">
+              <Stat label="Wefts" value={totalWefts} />
+              <Stat label="Hair" value={<Currency amount={hairCost}/>} />
+            </div>
+            <div className="border flowe-border p-3 rounded-xl">
+              <Stat label="Labor" value={<Currency amount={labor}/>} />
+            </div>
+            <div className="border bg-black text-white p-3 rounded-xl">
+              <Stat label="Total" value={<Currency amount={total}/>} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function Maintenance() {
+      const [rows, setRows] = useState(2);
+      const total = rows * MOVE_UP_PER_ROW;
+      return (
+        <div className="border flowe-border rounded-2xl p-5 space-y-4 bg-white">
+          <div className="flex justify-between">
+            <h3 className="font-semibold flowe-serif text-lg">Maintenance Move-Ups</h3>
+            <span className="pill">$150 per row</span>
+          </div>
+          <div className="grid md:grid-cols-3 gap-4">
+            <select className="border p-2 rounded-xl" value={rows} onChange={e=>setRows(parseInt(e.target.value))}>
+              <option value="1">1 Row</option>
+              <option value="2">2 Rows</option>
+              <option value="3">3 Rows</option>
+            </select>
+            <div className="border flowe-border p-3 rounded-xl">
+              <Stat label="Price" value={<Currency amount={total}/>} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      return (
+        <main className="flowe-sans space-y-10 max-w-5xl mx-auto p-6">
+          <h1 className="text-3xl font-bold flowe-serif mb-4">FLOW(E)XTENSIONS Pricing</h1>
+          <KTipCalculator/>
+          <WeftCalculator/>
+          <Maintenance/>
+        </main>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
