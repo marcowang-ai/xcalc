@@ -72,11 +72,10 @@
       const [pieces, setPieces] = useState(120);
 
       const estHours = useMemo(() => {
-        if (pieces <= 60) return 1;
-        if (pieces <= 120) return 2;
-        if (pieces <= 300) return 3.5;
-        const extra = pieces - 300;
-        return 3.5 + (extra / 60) * 0.6;
+        const p = Number(pieces) || 0;
+        if (p <= 60) return 1.0;
+        const blocks = Math.ceil((p - 60) / 30); // each block adds 0.5 hr
+        return 1.0 + blocks * 0.5;
       }, [pieces]);
 
       const perPiece = pieces < 60 ? KTIP_PRICE.alacarte : KTIP_PRICE.standard;
@@ -202,7 +201,7 @@
       <main className="flowe-sans max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-10">
         <Header />
 
-        {/* K-Tip row: snapshot + calculator */}
+        {/* K-Tip row */}
         <section>
           <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight flowe-serif mb-2">K-Tip Services</h2>
           <p className="flowe-muted mb-4">Precision strand-by-strand placement for volume, coverage, and custom shaping.</p>
@@ -214,7 +213,7 @@
           </div>
         </section>
 
-        {/* Wefts row: snapshot + calculator */}
+        {/* Wefts row */}
         <section>
           <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight flowe-serif mb-2">Wefts</h2>
           <p className="flowe-muted mb-4">Ultra-thin Genius wefts for seamless, weight-balanced installs.</p>
