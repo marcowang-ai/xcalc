@@ -32,6 +32,10 @@
     .flowe-border { border-color: var(--flowe-border); }
     .pill { border: 1px solid var(--flowe-border); border-radius: 9999px; padding: 4px 10px; font-size: 12px; }
     .card { background: #fff; border: 1px solid var(--flowe-border); border-radius: 16px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+    a.pill:hover { background:#000; color:#fff; }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type="number"] { -moz-appearance: textfield; }
   </style>
 </head>
 <body>
@@ -43,8 +47,12 @@
     const HOURLY = { L1: 85, L2: 100, L3: 150 };
     const KTIP_PRICE = { standard: 6.25, alacarte: 11 };
     const WEFT_PRICE = { "18": 180, "22": 210 };
+    const MOVE_UP_PER_ROW = 150;
 
-    const Currency = ({ amount }) => <span>{amount.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>;
+    const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
+    const Currency = ({ amount }) => (
+      <span>{amount.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 2 })}</span>
+    );
     const Stat = ({ label, value }) => (
       <div className="flex justify-between text-sm">
         <span className="flowe-muted">{label}</span>
@@ -52,18 +60,71 @@
       </div>
     );
 
+    const Header = () => (
+      <header className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full bg-black text-white grid place-items-center tracking-tight">F</div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight flowe-serif">FLOW(E)XTENSIONS</h1>
+              <p className="text-xs flowe-muted -mt-1">Luxury extension services by Flowe Studio</p>
+            </div>
+          </div>
+          <a href="https://www.flowe.studio" className="hidden sm:inline-flex items-center rounded-full px-4 py-2 text-sm pill">Back to Flowe Studio</a>
+        </div>
+      </header>
+    );
+
+    /* ---------------- K-TIP ---------------- */
+
     const KTipSnapshot = () => (
-      <div className="card p-5 space-y-2">
-        <h3 className="font-semibold flowe-serif text-lg mb-2">Pricing Snapshot</h3>
-        <ul className="text-sm flowe-muted list-disc pl-5 space-y-1">
-          <li><span className="font-medium text-black">Hair:</span> $6.25/piece (standard)</li>
-          <li><span className="font-medium text-black">A la carte:</span> $11.00/piece for fewer than 60 pieces</li>
-          <li className="pt-2"><span className="font-medium text-black">Typical installs:</span></li>
-          <li>• Full head ~300 pieces (3–4h)</li>
-          <li>• Volume filler ~120 pieces (2h)</li>
-          <li>• Crown filler ~60 pieces (1h)</li>
-          <li className="pt-2">Example: L1 crown filler = $85 labor + (60 × $6.25) hair.</li>
-        </ul>
+      <div className="card p-5 space-y-4">
+        <div>
+          <h3 className="font-semibold flowe-serif text-lg mb-1">Pricing Snapshot</h3>
+          <ul className="text-sm flowe-muted list-disc pl-5 space-y-1">
+            <li><span className="font-medium text-black">Hair:</span> $6.25/piece (standard)</li>
+            <li><span className="font-medium text-black">A la carte:</span> $11.00/piece for fewer than 60 pieces</li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="text-sm font-semibold mb-1">Timing Model</h4>
+          <ul className="text-sm flowe-muted list-disc pl-5 space-y-1">
+            <li>0.5 hour prep time</li>
+            <li>30 seconds per piece</li>
+            <li><b>Rounded to the next 0.5 hour</b></li>
+            <li><b>30 pieces or fewer billed as 0.5h minimum</b></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="text-sm font-semibold mb-2">Reference Guide</h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left flowe-muted border-b flowe-border">
+                  <th className="py-2 pr-4">Pieces</th>
+                  <th className="py-2 pr-4">Time</th>
+                  <th className="py-2">Label</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b flowe-border"><td className="py-2 pr-4">30</td><td className="py-2 pr-4"><b>0.5 h</b></td><td className="py-2">Minimum (≤30)</td></tr>
+                <tr className="border-b flowe-border"><td className="py-2 pr-4">60</td><td className="py-2 pr-4"><b>1.0 h</b></td><td className="py-2">Crown filler</td></tr>
+                <tr className="border-b flowe-border"><td className="py-2 pr-4">90</td><td className="py-2 pr-4"><b>1.5 h</b></td><td className="py-2">Light volume</td></tr>
+                <tr className="border-b flowe-border"><td className="py-2 pr-4">120</td><td className="py-2 pr-4"><b>1.5 h</b></td><td className="py-2">Volume filler</td></tr>
+                <tr className="border-b flowe-border"><td className="py-2 pr-4">150</td><td className="py-2 pr-4"><b>2.0 h</b></td><td className="py-2">Heavier volume</td></tr>
+                <tr className="border-b flowe-border"><td className="py-2 pr-4">180</td><td className="py-2 pr-4"><b>2.5 h</b></td><td className="py-2"><b>Extra Heavy</b></td></tr>
+                <tr className="border-b flowe-border"><td className="py-2 pr-4">240</td><td className="py-2 pr-4"><b>3.0 h</b></td><td className="py-2"><b>Extra Extra Heavy</b></td></tr>
+                <tr><td className="py-2 pr-4">300</td><td className="py-2 pr-4"><b>3.5 h</b></td><td className="py-2">Full head</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="text-xs flowe-muted">
+          Example: <b>L1 Crown filler (60 pcs)</b> → Labor 1.0 h × $85/hr = $85; Hair 60 × $6.25 = $375; <b>Total $460</b>.
+        </div>
       </div>
     );
 
@@ -71,17 +132,26 @@
       const [level, setLevel] = useState("L1");
       const [pieces, setPieces] = useState(120);
 
+      // Business rule:
+      // - ≤30 pieces => 0.5h flat (minimum)
+      // - Otherwise: 0.5h prep + 30s per piece, rounded UP to next 0.5h
       const estHours = useMemo(() => {
         const p = Number(pieces) || 0;
-        if (p <= 60) return 1.0;
-        const blocks = Math.ceil((p - 60) / 30); // each block adds 0.5 hr
-        return 1.0 + blocks * 0.5;
+        if (p <= 30) return 0.5;
+        const perPieceHours = 0.0083333333; // 30s per piece
+        const raw = 0.5 + p * perPieceHours;
+        return Math.ceil(raw * 2) / 2; // round up to next 0.5h
       }, [pieces]);
 
       const perPiece = pieces < 60 ? KTIP_PRICE.alacarte : KTIP_PRICE.standard;
       const hairCost = pieces * perPiece;
       const labor = estHours * HOURLY[level];
       const total = hairCost + labor;
+
+      const handleTypedPieces = (val) => {
+        const n = clamp(parseInt(val || "0", 10), 0, 360);
+        if (!Number.isNaN(n)) setPieces(n);
+      };
 
       return (
         <div className="card p-5 space-y-4">
@@ -91,24 +161,50 @@
           </div>
 
           <div className="grid md:grid-cols-3 gap-4">
+            {/* Level */}
             <select className="border flowe-border p-2 rounded-xl" value={level} onChange={e=>setLevel(e.target.value)}>
               <option value="L1">Level 1 ($85/hr)</option>
               <option value="L2">Level 2 ($100/hr)</option>
               <option value="L3">Level 3 ($150/hr)</option>
             </select>
-            <input type="range" min="6" max="360" step="6" value={pieces} onChange={e=>setPieces(parseInt(e.target.value))} className="w-full"/>
+
+            {/* Slider + typed input (kept in sync) */}
+            <div>
+              <input
+                type="range"
+                min="0" max="360" step="1"
+                value={pieces}
+                onChange={e=>setPieces(parseInt(e.target.value))}
+                className="w-full"
+              />
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-xs flowe-muted">Pieces:</span>
+                <input
+                  type="number"
+                  min="0" max="360"
+                  value={pieces}
+                  onChange={e => handleTypedPieces(e.target.value)}
+                  className="w-24 border flowe-border rounded-xl px-2 py-1 text-sm"
+                  inputMode="numeric"
+                />
+              </div>
+            </div>
+
+            {/* Hours box */}
             <div className="border flowe-border p-3 rounded-xl">
-              <Stat label="Pieces" value={pieces} />
               <Stat label="Est. Hours" value={`${estHours.toFixed(1)}h`} />
+              <div className="text-xs flowe-muted mt-1">≤30 → 0.5h min; else rounded up to next 0.5h</div>
             </div>
           </div>
 
           <div className="grid md:grid-cols-3 gap-4">
             <div className="border flowe-border p-3 rounded-xl">
               <Stat label="Labor" value={<Currency amount={labor}/>} />
+              <div className="text-xs flowe-muted mt-1">{level} @ ${HOURLY[level]}/hr × {estHours.toFixed(1)}h</div>
             </div>
             <div className="border flowe-border p-3 rounded-xl">
               <Stat label="Hair" value={<Currency amount={hairCost}/>} />
+              <div className="text-xs flowe-muted mt-1">{pieces < 60 ? "A la carte" : "Standard"} @ ${perPiece.toFixed(2)}/piece × {pieces}</div>
             </div>
             <div className="border bg-black text-white p-3 rounded-xl">
               <Stat label="Total" value={<Currency amount={total}/>} />
@@ -117,6 +213,8 @@
         </div>
       );
     };
+
+    /* ---------------- WEFTS ---------------- */
 
     const WeftsSnapshot = () => (
       <div className="card p-5 space-y-2">
@@ -137,7 +235,7 @@
       const [length, setLength] = useState("18");
 
       const totalWefts = rows * wpr;
-      const hours = rows === 1 ? 2 : 3;
+      const hours = rows === 1 ? 2 : 3; // per spec
       const hairCost = totalWefts * WEFT_PRICE[length];
       const labor = hours * HOURLY[level];
       const total = hairCost + labor;
@@ -159,7 +257,10 @@
               <option value="1">1 Row (~2h)</option>
               <option value="2">2 Rows (~3h)</option>
             </select>
-            <input type="range" min="3" max="6" value={wpr} onChange={e=>setWpr(parseInt(e.target.value))} />
+            <div>
+              <input type="range" min="3" max="6" step="1" value={wpr} onChange={e=>setWpr(parseInt(e.target.value))} className="w-full"/>
+              <div className="text-xs flowe-muted mt-1">Wefts/row: <span className="font-medium text-black">{wpr}</span></div>
+            </div>
             <select className="border flowe-border p-2 rounded-xl" value={length} onChange={e=>setLength(e.target.value)}>
               <option value="18">18" ($180/weft)</option>
               <option value="22">22" ($210/weft)</option>
@@ -173,6 +274,7 @@
             </div>
             <div className="border flowe-border p-3 rounded-xl">
               <Stat label="Labor" value={<Currency amount={labor}/>} />
+              <div className="text-xs flowe-muted mt-1">{level} @ ${HOURLY[level]}/hr × {hours}h</div>
             </div>
             <div className="border bg-black text-white p-3 rounded-xl">
               <Stat label="Total" value={<Currency amount={total}/>} />
@@ -182,20 +284,40 @@
       );
     };
 
-    const Header = () => (
-      <header className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-black text-white grid place-items-center tracking-tight">F</div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight flowe-serif">FLOW(E)XTENSIONS</h1>
-              <p className="text-xs flowe-muted -mt-1">Luxury extension services by Flowe Studio</p>
-            </div>
+    /* ---------------- MAINTENANCE ---------------- */
+
+    const Maintenance = () => {
+      const [rows, setRows] = useState(2);
+      const total = rows * MOVE_UP_PER_ROW;
+      return (
+        <div className="card p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold flowe-serif">Maintenance Move-Ups</h3>
+            <span className="pill">$150 per row</span>
           </div>
-          <a href="https://www.flowe.studio" className="hidden sm:inline-flex items-center rounded-full px-4 py-2 text-sm pill hover:bg-black hover:text-white">Back to Flowe Studio</a>
+
+          <div className="grid md:grid-cols-3 gap-4 items-end">
+            <label className="block text-sm">
+              <span className="flowe-muted">Rows</span>
+              <select className="w-full border flowe-border p-2 rounded-xl mt-1" value={rows} onChange={(e)=>setRows(parseInt(e.target.value))}>
+                <option value="1">1 Row</option>
+                <option value="2">2 Rows</option>
+                <option value="3">3 Rows</option>
+              </select>
+            </label>
+
+            <div className="border flowe-border p-3 rounded-xl">
+              <Stat label="Price" value={<Currency amount={total} />} />
+              <div className="text-xs flowe-muted mt-1">Does not include color or toner.</div>
+            </div>
+
+            <a href="https://www.flowe.studio/contact" className="inline-flex justify-center rounded-xl bg-black text-white px-4 py-3 text-sm font-medium">Schedule Move-Up</a>
+          </div>
         </div>
-      </header>
-    );
+      );
+    };
+
+    /* ---------------- APP ---------------- */
 
     const App = () => (
       <main className="flowe-sans max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-10">
@@ -204,7 +326,7 @@
         {/* K-Tip row */}
         <section>
           <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight flowe-serif mb-2">K-Tip Services</h2>
-          <p className="flowe-muted mb-4">Precision strand-by-strand placement for volume, coverage, and custom shaping.</p>
+          <p className="flowe-muted mb-4">Timing model: ≤30 pcs = 0.5h min; else 0.5h prep + 30s per piece, <b>rounded up to the next 0.5h</b>.</p>
           <div className="grid md:grid-cols-3 gap-6 items-start">
             <KTipSnapshot />
             <div className="md:col-span-2">
@@ -223,6 +345,13 @@
               <WeftsCalculator />
             </div>
           </div>
+        </section>
+
+        {/* Maintenance */}
+        <section>
+          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight flowe-serif mb-2">Maintenance</h2>
+          <p className="flowe-muted mb-4">Keep your rows fresh and comfortably placed.</p>
+          <Maintenance />
         </section>
       </main>
     );
