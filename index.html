@@ -32,6 +32,9 @@
     .pill { border: 1px solid var(--flowe-border); border-radius: 9999px; padding: 4px 10px; font-size: 12px; }
     .card { background: #fff; border: 1px solid var(--flowe-border); border-radius: 16px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
     a.pill:hover { background:#000; color:#fff; }
+    .btn { border-radius: 12px; padding: 10px 14px; font-weight: 600; }
+    .btn-dark { background:#000; color:#fff; }
+    .btn-light { background:#fff; border:1px solid var(--flowe-border); color:#0E0E0E; }
     input[type="number"]::-webkit-outer-spin-button,
     input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     input[type="number"] { -moz-appearance: textfield; }
@@ -48,10 +51,11 @@
     const WEFT_PRICE = { "18": 110, "24": 170 };
     const MOVE_UP_PER_ROW = 150;
 
+    // helpers
     const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
-    const Currency = ({ amount }) => (
-      <span>{amount.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 2 })}</span>
-    );
+    const fmt = (n) => n.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
+
+    const Currency = ({ amount }) => <span>{fmt(amount)}</span>;
     const Stat = ({ label, value }) => (
       <div className="flex justify-between text-sm">
         <span className="flowe-muted">{label}</span>
@@ -127,6 +131,33 @@
       </div>
     );
 
+    const CopyButton = ({ getText }) => {
+      const [copied, setCopied] = useState(false);
+      const onCopy = async () => {
+        const text = getText();
+        try {
+          await navigator.clipboard.writeText(text);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1400);
+        } catch {
+          // Fallback
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1400);
+        }
+      };
+      return (
+        <button onClick={onCopy} className={`btn ${copied ? 'btn-light' : 'btn-dark'}`}>
+          {copied ? 'Copied!' : 'Copy quote'}
+        </button>
+      );
+    };
+
     const KTipCalculator = () => {
       const [level, setLevel] = useState("L1");
       const [pieces, setPieces] = useState(120);
@@ -145,6 +176,10 @@
       const labor = estHours * HOURLY[level];
       const total = hairCost + labor;
 
+      const levelName = `${level} ($${HOURLY[level]}/hr)`;
+      const quoteText = () =>
+        `K-Tip · ${pieces} pieces · Level ${levelName} · Hours ${estHours.toFixed(1)} · Hair ${fmt(hairCost)} · Labor ${fmt(labor)} · Total ${fmt(total)}`;
+
       const handleTypedPieces = (val) => {
         const n = clamp(parseInt(val || "0", 10), 0, 360);
         if (!Number.isNaN(n)) setPieces(n);
@@ -152,7 +187,7 @@
 
       return (
         <div className="card p-5 space-y-4">
-          <div className="flex justify-between">
+          <div className="flex justify-between items-center">
             <h3 className="font-semibold flowe-serif text-lg">K-Tip Calculator</h3>
             <span className="pill">{pieces < 60 ? 'A la carte' : 'Standard pricing'}</span>
           </div>
@@ -166,8 +201,7 @@
 
             <div>
               <input
-                type="range"
-                min="0" max="360" step="1"
+                type="range" min="0" max="360" step="1"
                 value={pieces}
                 onChange={e=>setPieces(parseInt(e.target.value))}
                 className="w-full"
@@ -175,8 +209,7 @@
               <div className="flex items-center gap-2 mt-2">
                 <span className="text-xs flowe-muted">Pieces:</span>
                 <input
-                  type="number"
-                  min="0" max="360"
+                  type="number" min="0" max="360"
                   value={pieces}
                   onChange={e => handleTypedPieces(e.target.value)}
                   className="w-24 border flowe-border rounded-xl px-2 py-1 text-sm"
@@ -204,6 +237,10 @@
               <Stat label="Total" value={<Currency amount={total}/>} />
             </div>
           </div>
+
+          <div className="flex justify-end">
+            <CopyButton getText={quoteText} />
+          </div>
         </div>
       );
     };
@@ -215,6 +252,7 @@
         <h3 className="font-semibold flowe-serif text-lg mb-1">Pricing Snapshot</h3>
         <ul className="text-sm flowe-muted list-disc pl-5 space-y-1">
           <li><span className="font-medium text-black">Hair:</span> $110/weft (18") · $170/weft (24")</li>
+          <li>Sold by total wefts; placement customized per guest.</li>
         </ul>
 
         <h4 className="text-sm font-semibold mt-2">Reference Guide</h4>
@@ -229,38 +267,43 @@
 
     const WeftsCalculator = () => {
       const [level, setLevel] = useState("L3");
-      const [rows, setRows] = useState(2);
-      const [wpr, setWpr] = useState(3);
       const [length, setLength] = useState("18");
+      const [totalWefts, setTotalWefts] = useState(6); // sell by total wefts
 
-      // Totals
-      const totalWefts = rows * wpr;
-
-      // Time model: 3→1h, 6→2h, 9→3h, 12→4h; round up to next multiple of 3; cap at 12 (4h)
+      // Time model: every 3 wefts = 1 hour; round UP; cap at 4h
       const blocks = clamp(Math.ceil(totalWefts / 3), 1, 4);
       const hours = blocks * 1;
 
-      // Labels for legend
-      const labels = [
-        "mini volume",
-        "volume & length",
-        "full volume & length",
-        "mega volume & length",
+      const tierLabels = [
+        "mini volume",            // 3
+        "volume & length",        // 6
+        "full volume & length",   // 9
+        "mega volume & length",   // 12
       ];
-      const currentLabel = labels[blocks - 1];
+      const currentLabel = tierLabels[blocks - 1];
 
       const hairCost = totalWefts * WEFT_PRICE[length];
       const labor = hours * HOURLY[level];
       const total = hairCost + labor;
 
+      const handleWeftsInput = (val) => {
+        const n = parseInt(val || "0", 10);
+        if (!Number.isNaN(n)) setTotalWefts(clamp(n, 1, 24));
+      };
+
+      const levelName = `${level} ($${HOURLY[level]}/hr)`;
+      const quoteText = () =>
+        `Wefts · ${totalWefts} ${length}" · Level ${levelName} · ${currentLabel} · Hours ${hours} · Hair ${fmt(hairCost)} · Labor ${fmt(labor)} · Total ${fmt(total)}`;
+
       return (
         <div className="card p-5 space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="font-semibold flowe-serif text-lg">Wefts Calculator</h3>
-            <span className="pill">Reference: 3 wefts ≈ 1h</span>
+            <span className="pill">Guide: 3 wefts ≈ 1h</span>
           </div>
 
-          <div className="grid md:grid-cols-4 gap-4 items-end">
+          <div className="grid md:grid-cols-3 gap-4 items-end">
+            {/* Level */}
             <label className="block text-sm">
               <span className="flowe-muted">Stylist Level</span>
               <select
@@ -274,34 +317,34 @@
               </select>
             </label>
 
+            {/* Total wefts (slider + input) */}
             <label className="block text-sm">
-              <span className="flowe-muted">Rows</span>
-              <select
-                className="w-full border flowe-border p-2 rounded-xl mt-1"
-                value={rows}
-                onChange={(e) => setRows(parseInt(e.target.value))}
-              >
-                <option value="1">1 Row</option>
-                <option value="2">2 Rows</option>
-              </select>
-            </label>
-
-            <label className="block text-sm">
-              <span className="flowe-muted">Wefts / Row</span>
+              <span className="flowe-muted">Total Wefts</span>
               <input
                 type="range"
                 min="3"
-                max="6"
+                max="12"
                 step="1"
-                value={wpr}
-                onChange={(e) => setWpr(parseInt(e.target.value))}
+                value={Math.min(Math.max(totalWefts, 3), 12)}
+                onChange={(e) => setTotalWefts(parseInt(e.target.value, 10))}
                 className="w-full mt-2"
               />
-              <div className="text-xs flowe-muted mt-1">
-                Current: <span className="font-medium text-black">{wpr}</span>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-xs flowe-muted">Wefts:</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="24"
+                  value={totalWefts}
+                  onChange={(e) => handleWeftsInput(e.target.value)}
+                  className="w-24 border flowe-border rounded-xl px-2 py-1 text-sm"
+                  inputMode="numeric"
+                />
+                <span className="text-xs flowe-muted">(slider shows 3–12; input allows 1–24)</span>
               </div>
             </label>
 
+            {/* Length */}
             <label className="block text-sm">
               <span className="flowe-muted">Length</span>
               <select
@@ -342,8 +385,12 @@
               <span className="pill">~{hours}h</span>
             </div>
             <div className="text-xs flowe-muted mt-2">
-              Guide: 3 wefts → 1h · 6 wefts → 2h · 9 wefts → 3h · 12 wefts → 4h (rounded up)
+              Reference: 3 → 1h · 6 → 2h · 9 → 3h · 12 → 4h (rounded up)
             </div>
+          </div>
+
+          <div className="flex justify-end">
+            <CopyButton getText={quoteText} />
           </div>
         </div>
       );
