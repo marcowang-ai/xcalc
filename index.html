@@ -84,8 +84,6 @@
         const text = getText();
         try {
           await navigator.clipboard.writeText(text);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1400);
         } catch {
           const ta = document.createElement('textarea');
           ta.value = text;
@@ -93,9 +91,9 @@
           ta.select();
           document.execCommand('copy');
           document.body.removeChild(ta);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1400);
         }
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1400);
       };
       return (
         <button
@@ -167,16 +165,17 @@
       </div>
     );
 
-    /* ---------------- WEFTS SNAPSHOT ---------------- */
+    /* ---------------- WEFTS SNAPSHOT (MATCHED SPACING) ---------------- */
 
     const WeftsSnapshot = () => (
       <div className="card p-5 space-y-4">
-        <h3 className="font-semibold flowe-serif text-lg mb-1">Pricing Snapshot</h3>
-
-        <ul className="text-sm flowe-muted list-disc pl-5 space-y-1">
-          <li><span className="font-medium text-black">Hair:</span> $110/weft (18") · $170/weft (24")</li>
-          <li>Sold by total wefts; placement customized per guest.</li>
-        </ul>
+        <div>
+          <h3 className="font-semibold flowe-serif text-lg mb-1">Pricing Snapshot</h3>
+          <ul className="text-sm flowe-muted list-disc pl-5 space-y-1">
+            <li><span className="font-medium text-black">Hair:</span> $110/weft (18") · $170/weft (24")</li>
+            <li>Sold by total wefts; placement customized per guest.</li>
+          </ul>
+        </div>
 
         <div>
           <h4 className="text-sm font-semibold mb-2">Reference Guide</h4>
@@ -431,7 +430,7 @@
     /* ---------------- MAINTENANCE ---------------- */
 
     const Maintenance = () => {
-      const [rows, setRows] = useState(1); // DEFAULT TO 1 ROW
+      const [rows, setRows] = useState(1); // default 1 row
       const total = rows * MOVE_UP_PER_ROW;
       return (
         <div className="card p-5 space-y-4">
