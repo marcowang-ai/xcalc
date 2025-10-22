@@ -431,7 +431,7 @@
     /* ---------------- MAINTENANCE ---------------- */
 
     const Maintenance = () => {
-      const [rows, setRows] = useState(2);
+      const [rows, setRows] = useState(1); // DEFAULT TO 1 ROW
       const total = rows * MOVE_UP_PER_ROW;
       return (
         <div className="card p-5 space-y-4">
