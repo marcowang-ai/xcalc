@@ -133,14 +133,14 @@
           <ul className="text-sm flowe-muted list-disc pl-5 space-y-1">
             <li>
               <span className="font-medium text-black">Hair (standard, 60+ pieces):</span>
-              &nbsp;${PRICING.ktip.byLength["18"].toFixed(2)}/piece (18")
-              · ${PRICING.ktip.byLength["20"].toFixed(2)}/piece (20")
-              · ${PRICING.ktip.byLength["22"].toFixed(2)}/piece (22")
-              · ${PRICING.ktip.byLength["24"].toFixed(2)}/piece (24")
+              &nbsp;{PRICING.ktip.byLength["18"].toFixed(2)}/piece (18")
+              &nbsp;· {PRICING.ktip.byLength["20"].toFixed(2)}/piece (20")
+              &nbsp;· {PRICING.ktip.byLength["22"].toFixed(2)}/piece (22")
+              &nbsp;· {PRICING.ktip.byLength["24"].toFixed(2)}/piece (24")
             </li>
             <li>
               <span className="font-medium text-black">A la carte:</span>
-              &nbsp;${PRICING.ktip.alacarte.toFixed(2)}/piece for fewer than 60 pieces
+              &nbsp;{PRICING.ktip.alacarte.toFixed(2)}/piece for fewer than 60 pieces
             </li>
           </ul>
         </div>
@@ -192,7 +192,7 @@
         <div>
           <h3 className="font-semibold flowe-serif text-lg mb-1">Pricing Snapshot</h3>
           <ul className="text-sm flowe-muted list-disc pl-5 space-y-1">
-            <li><span className="font-medium text-black">Hair:</span> ${WEFT_PRICE["18"]}/weft (18") · ${WEFT_PRICE["24"]}/weft (24")</li>
+            <li><span className="font-medium text-black">Hair:</span> {WEFT_PRICE["18"]}/weft (18") · {WEFT_PRICE["24"]}/weft (24")</li>
             <li>Sold by total wefts; placement customized per guest.</li>
           </ul>
         </div>
@@ -301,7 +301,7 @@
                 <option value="24">{ktipLengthLabel("24")}</option>
               </select>
               <p className="text-[11px] flowe-muted mt-1">
-                Fewer than 60 pieces billed at a la carte <b>${PRICING.ktip.alacarte.toFixed(2)}</b>/piece.
+                Fewer than 60 pieces billed at a la carte <b>{PRICING.ktip.alacarte.toFixed(2)}</b>/piece.
               </p>
             </label>
 
@@ -344,8 +344,8 @@
               <div className="text-xs flowe-muted mt-1">
                 {pieces === 0 ? "—"
                   : isAlaCarte
-                    ? `A la carte @ $${perPiece.toFixed(2)}/piece × ${pieces}`
-                    : `${length}" @ $${perPiece.toFixed(2)}/piece × ${pieces}`}
+                    ? `A la carte @ ${fmt(perPiece)}/piece × ${pieces}`
+                    : `${length}" @ ${fmt(perPiece)}/piece × ${pieces}`}
               </div>
             </div>
             <TotalCard dim={isZero}>
@@ -367,8 +367,8 @@
       const [totalWefts, setTotalWefts] = useState(0); // default 0
 
       // Time model: every 3 wefts = 1 hour; round up; cap at 4h; 0 → 0h
-      theBlocks = Math.ceil((totalWefts || 0) / 3);
-      const hours = totalWefts === 0 ? 0 : clamp(theBlocks, 1, 4) * 1;
+      const blocks = Math.ceil((totalWefts || 0) / 3);
+      const hours = totalWefts === 0 ? 0 : clamp(blocks, 1, 4) * 1;
 
       const hairCost = totalWefts * WEFT_PRICE[length];
       const labor = hours * HOURLY[level];
