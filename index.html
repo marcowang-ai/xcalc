@@ -46,10 +46,19 @@
   <script type="text/babel">
     const { useState, useMemo } = React;
 
-    const HOURLY = { L1: 85, L2: 100, L3: 150 };
-    const KTIP_PRICE = { standard: 6.25, alacarte: 11 };
-    const WEFT_PRICE = { "18": 110, "24": 170 };
-    const MOVE_UP_PER_ROW = 150;
+    // === PRICING (edit in one place) ===
+    const PRICING = {
+      hourly: { L1: 85, L2: 100, L3: 150 },
+      ktip: {
+        alacarte: 7.25,
+        byLength: { "18": 3.25, "20": 3.50, "22": 3.75, "24": 4.00 }
+      },
+      wefts: { "18": 110, "24": 170 },
+      maintenancePerRow: 150,
+    };
+    const HOURLY = PRICING.hourly;
+    const WEFT_PRICE = PRICING.wefts;
+    const MOVE_UP_PER_ROW = PRICING.maintenancePerRow;
 
     const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
     const fmt = (n) => n.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
@@ -61,6 +70,10 @@
         <span className="font-medium">{value}</span>
       </div>
     );
+
+    const hourlyOptionLabel = (level) => `Level ${level.slice(1)} ($${HOURLY[level]}/hr)`;
+    const weftLengthLabel = (len) => `${len}" ($${WEFT_PRICE[len]}/weft)`;
+    const ktipLengthLabel = (len) => `${len}" ($${PRICING.ktip.byLength[len].toFixed(2)}/piece)`;
 
     const Header = () => (
       <header className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-6">
@@ -113,14 +126,22 @@
     );
 
     /* ---------------- K-TIP SNAPSHOT ---------------- */
-
     const KTipSnapshot = () => (
       <div className="card p-5 space-y-4">
         <div>
           <h3 className="font-semibold flowe-serif text-lg mb-1">Pricing Snapshot</h3>
           <ul className="text-sm flowe-muted list-disc pl-5 space-y-1">
-            <li><span className="font-medium text-black">Hair:</span> $6.25/piece (standard)</li>
-            <li><span className="font-medium text-black">A la carte:</span> $11.00/piece for fewer than 60 pieces</li>
+            <li>
+              <span className="font-medium text-black">Hair (standard, 60+ pieces):</span>
+              &nbsp;${PRICING.ktip.byLength["18"].toFixed(2)}/piece (18")
+              · ${PRICING.ktip.byLength["20"].toFixed(2)}/piece (20")
+              · ${PRICING.ktip.byLength["22"].toFixed(2)}/piece (22")
+              · ${PRICING.ktip.byLength["24"].toFixed(2)}/piece (24")
+            </li>
+            <li>
+              <span className="font-medium text-black">A la carte:</span>
+              &nbsp;${PRICING.ktip.alacarte.toFixed(2)}/piece for fewer than 60 pieces
+            </li>
           </ul>
         </div>
 
@@ -160,19 +181,18 @@
         </div>
 
         <div className="text-xs flowe-muted">
-          Example: <b>L1 Crown filler (60 pcs)</b> → Labor 1.0 h × $85/hr = $85; Hair 60 × $6.25 = $375; <b>Total $460</b>.
+          Example: <b>L1 Crown filler (60 pcs, 18")</b> → Labor 1.0 h × $85/hr = $85; Hair 60 × $3.25 = $195; <b>Total $280</b>.
         </div>
       </div>
     );
 
     /* ---------------- WEFTS SNAPSHOT (MATCHED SPACING) ---------------- */
-
     const WeftsSnapshot = () => (
       <div className="card p-5 space-y-4">
         <div>
           <h3 className="font-semibold flowe-serif text-lg mb-1">Pricing Snapshot</h3>
           <ul className="text-sm flowe-muted list-disc pl-5 space-y-1">
-            <li><span className="font-medium text-black">Hair:</span> $110/weft (18") · $170/weft (24")</li>
+            <li><span className="font-medium text-black">Hair:</span> ${WEFT_PRICE["18"]}/weft (18") · ${WEFT_PRICE["24"]}/weft (24")</li>
             <li>Sold by total wefts; placement customized per guest.</li>
           </ul>
         </div>
@@ -204,13 +224,13 @@
       </div>
     );
 
-    /* ---------------- K-TIP CALCULATOR ---------------- */
-
+    /* ---------------- K-TIP CALCULATOR (with length + note) ---------------- */
     const KTipCalculator = () => {
-      const [level, setLevel] = useState("L1");     // default Level 1
-      const [pieces, setPieces] = useState(0);      // default 0
+      const [level, setLevel] = useState("L1");      // default Level 1
+      const [length, setLength] = useState("18");    // length selector
+      const [pieces, setPieces] = useState(0);       // default 0
 
-      // 0 → 0h; ≤30 → 0.5h; else 0.5h prep + 30s/piece, rounded up 0.5h
+      // Time model: 0 → 0h; ≤30 → 0.5h; else 0.5h prep + 30s/piece, rounded up 0.5h
       const estHours = useMemo(() => {
         const p = Number(pieces) || 0;
         if (p === 0) return 0;
@@ -220,7 +240,9 @@
         return Math.ceil(raw * 2) / 2;
       }, [pieces]);
 
-      const perPiece = pieces > 0 && pieces < 60 ? KTIP_PRICE.alacarte : KTIP_PRICE.standard;
+      // Pricing: <60 pieces → a la carte; otherwise use per-length rate
+      const isAlaCarte = pieces > 0 && pieces < 60;
+      const perPiece = isAlaCarte ? PRICING.ktip.alacarte : PRICING.ktip.byLength[length];
       const hairCost = pieces * perPiece;
       const labor = estHours * HOURLY[level];
       const total = hairCost + labor;
@@ -229,6 +251,7 @@
         [
           "K-Tip",
           `${pieces} pieces`,
+          `Length ${length}"`,
           `Level ${level} Stylist ($${HOURLY[level]}/hr)`,
           `Hours ${estHours.toFixed(1)}`,
           `Hair ${fmt(hairCost)}`,
@@ -241,7 +264,9 @@
         if (!Number.isNaN(n)) setPieces(n);
       };
 
-      const pillText = pieces === 0 ? '—' : (pieces < 60 ? 'A la carte' : 'Standard pricing');
+      const pillText = pieces === 0 ? '—'
+        : isAlaCarte ? 'A la carte'
+        : `${length}" standard`;
       const isZero = pieces === 0;
 
       return (
@@ -251,13 +276,36 @@
             <span className="pill">{pillText}</span>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-4">
-            <select className="border flowe-border p-2 rounded-xl" value={level} onChange={e=>setLevel(e.target.value)}>
-              <option value="L1">Level 1 ($85/hr)</option>
-              <option value="L2">Level 2 ($100/hr)</option>
-              <option value="L3">Level 3 ($150/hr)</option>
-            </select>
+          <div className="grid md:grid-cols-4 gap-4">
+            {/* Level */}
+            <label className="block text-sm">
+              <span className="flowe-muted">Stylist Level</span>
+              <select className="w-full border flowe-border p-2 rounded-xl mt-1" value={level} onChange={e=>setLevel(e.target.value)}>
+                <option value="L1">{hourlyOptionLabel("L1")}</option>
+                <option value="L2">{hourlyOptionLabel("L2")}</option>
+                <option value="L3">{hourlyOptionLabel("L3")}</option>
+              </select>
+            </label>
 
+            {/* Length + Note */}
+            <label className="block text-sm">
+              <span className="flowe-muted">Length</span>
+              <select
+                className="w-full border flowe-border p-2 rounded-xl mt-1"
+                value={length}
+                onChange={(e) => setLength(e.target.value)}
+              >
+                <option value="18">{ktipLengthLabel("18")}</option>
+                <option value="20">{ktipLengthLabel("20")}</option>
+                <option value="22">{ktipLengthLabel("22")}</option>
+                <option value="24">{ktipLengthLabel("24")}</option>
+              </select>
+              <p className="text-[11px] flowe-muted mt-1">
+                Fewer than 60 pieces billed at a la carte <b>${PRICING.ktip.alacarte.toFixed(2)}</b>/piece.
+              </p>
+            </label>
+
+            {/* Pieces */}
             <div>
               <input
                 type="range"
@@ -279,6 +327,7 @@
               </div>
             </div>
 
+            {/* Hours */}
             <div className="border flowe-border p-3 rounded-xl">
               <Stat label="Est. Hours" value={`${estHours.toFixed(1)}h`} />
               <div className="text-xs flowe-muted mt-1">0 → 0h; ≤30 → 0.5h; else rounded up</div>
@@ -293,7 +342,10 @@
             <div className="border flowe-border p-3 rounded-xl">
               <Stat label="Hair" value={<Currency amount={hairCost}/>} />
               <div className="text-xs flowe-muted mt-1">
-                {pieces === 0 ? "—" : (pieces < 60 ? "A la carte" : "Standard")} @ ${perPiece.toFixed(2)}/piece × {pieces}
+                {pieces === 0 ? "—"
+                  : isAlaCarte
+                    ? `A la carte @ $${perPiece.toFixed(2)}/piece × ${pieces}`
+                    : `${length}" @ $${perPiece.toFixed(2)}/piece × ${pieces}`}
               </div>
             </div>
             <TotalCard dim={isZero}>
@@ -309,15 +361,14 @@
     };
 
     /* ---------------- WEFTS CALCULATOR ---------------- */
-
     const WeftsCalculator = () => {
       const [level, setLevel] = useState("L1");   // default Level 1
       const [length, setLength] = useState("18");
       const [totalWefts, setTotalWefts] = useState(0); // default 0
 
       // Time model: every 3 wefts = 1 hour; round up; cap at 4h; 0 → 0h
-      const blocks = Math.ceil((totalWefts || 0) / 3);
-      const hours = totalWefts === 0 ? 0 : clamp(blocks, 1, 4) * 1;
+      theBlocks = Math.ceil((totalWefts || 0) / 3);
+      const hours = totalWefts === 0 ? 0 : clamp(theBlocks, 1, 4) * 1;
 
       const hairCost = totalWefts * WEFT_PRICE[length];
       const labor = hours * HOURLY[level];
@@ -356,9 +407,9 @@
                 value={level}
                 onChange={(e) => setLevel(e.target.value)}
               >
-                <option value="L1">Level 1 ($85/hr)</option>
-                <option value="L2">Level 2 ($100/hr)</option>
-                <option value="L3">Level 3 ($150/hr)</option>
+                <option value="L1">{hourlyOptionLabel("L1")}</option>
+                <option value="L2">{hourlyOptionLabel("L2")}</option>
+                <option value="L3">{hourlyOptionLabel("L3")}</option>
               </select>
             </label>
 
@@ -395,8 +446,8 @@
                 value={length}
                 onChange={(e) => setLength(e.target.value)}
               >
-                <option value="18">18" ($110/weft)</option>
-                <option value="24">24" ($170/weft)</option>
+                <option value="18">{weftLengthLabel("18")}</option>
+                <option value="24">{weftLengthLabel("24")}</option>
               </select>
             </label>
           </div>
@@ -428,7 +479,6 @@
     };
 
     /* ---------------- MAINTENANCE ---------------- */
-
     const Maintenance = () => {
       const [rows, setRows] = useState(1); // default 1 row
       const total = rows * MOVE_UP_PER_ROW;
@@ -436,7 +486,7 @@
         <div className="card p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold flowe-serif">Maintenance Move-Ups</h3>
-            <span className="pill">$150 per row</span>
+            <span className="pill">${MOVE_UP_PER_ROW} per row</span>
           </div>
 
           <div className="grid md:grid-cols-3 gap-4 items-end">
@@ -461,7 +511,6 @@
     };
 
     /* ---------------- APP ---------------- */
-
     const App = () => (
       <main className="flowe-sans max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-10">
         <Header />
