@@ -199,7 +199,9 @@
           <div className="flex justify-between items-center">
             <h3 className="font-semibold flowe-serif text-lg">K-Tip Calculator</h3>
             <span className="pill">{pieces===0 ? "—" : `${length}" standard`}</span>
-          </div>lassName="grid md:grid-cols-4 gap-4">
+          </div>
+
+          <div className="grid md:grid-cols-4 gap-4">
             <label className="text-sm">
               <span className="flowe-muted">Stylist Level</span>
               <select className="w-full border flowe-border p-2 rounded-xl mt-1" value={level} onChange={e=>setLevel(e.target.value)}>
@@ -216,9 +218,9 @@
                 <option value="20">{ktipLabel("20")}</option>
                 <option value="22">{ktipLabel("22")}</option>
               </select>
-                <option value="22">{ktipLabel("22")}</option>
-              </select>
             </label>
+
+            <div>
               <input type="range" min="0" max="360" value={pieces} onChange={e=>setPieces(parseInt(e.target.value)||0)} className="w-full"/>
               <div className="flex items-center gap-2 mt-2">
                 <span className="text-xs flowe-muted">Pieces:</span>
