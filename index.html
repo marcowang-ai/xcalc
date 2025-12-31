@@ -50,6 +50,9 @@
       ktip: {
         byLength: { "18": 3.88, "20": 4.52, "22": 5.76 },
       },
+      handCraftedKtip: {
+        byLength: { "18": 7.76, "20": 9.04, "22": 11.52 }, // Double the standard price
+      },
       wefts: { "18": 110, "24": 170 },
       maintenancePerRow: 150,
     };
@@ -242,6 +245,111 @@
       );
     };
 
+    /* ========= HAND-CRAFTED K-TIP CALCULATOR ========= */
+    const HandCraftedKTipCalculator = () => {
+      const [level, setLevel] = useState("L1");
+      const [length, setLength] = useState("18");
+      const [pieces, setPieces] = useState(0);
+
+      // Installation: 0 → 0h; ≤30 → 0.5h; else 0.5h prep + 30s/piece, rounded up to next 0.5h
+      const installHours = useMemo(() => {
+        const p = Number(pieces) || 0;
+        if (p === 0) return 0;
+        if (p <= 30) return 0.5;
+        const raw = 0.5 + p * 0.0083333333;
+        return Math.ceil(raw * 2) / 2;
+      }, [pieces]);
+
+      // Crafting: 60 pieces per hour
+      const craftingHours = useMemo(() => {
+        const p = Number(pieces) || 0;
+        if (p === 0) return 0;
+        const raw = p / 60;
+        return Math.ceil(raw * 2) / 2; // Round up to next 0.5h
+      }, [pieces]);
+
+      const perPiece = PRICING.handCraftedKtip.byLength[length];
+      const hair = pieces * perPiece;
+      const installLabor = installHours * HOURLY[level];
+      const craftingLabor = craftingHours * HOURLY[level];
+      const totalLabor = installLabor + craftingLabor;
+      const total = hair + totalLabor;
+
+      const quoteText = () => [
+        "Hand-Crafted K-Tip",
+        `${pieces} pieces`,
+        `Length ${length}"`,
+        `Level ${level} Stylist ($${HOURLY[level]}/hr)`,
+        `Install Hours ${installHours.toFixed(1)}`,
+        `Crafting Hours ${craftingHours.toFixed(1)}`,
+        `Hair ${fmt(hair)}`,
+        `Install Labor ${fmt(installLabor)}`,
+        `Crafting Labor ${fmt(craftingLabor)}`,
+        `Total ${fmt(total)}`
+      ].join("\n");
+
+      return (
+        <div className="card p-5 space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="font-semibold flowe-serif text-lg">Hand-Crafted K-Tip Calculator</h3>
+            <span className="pill">{pieces===0 ? "—" : `${length}" custom`}</span>
+          </div>
+
+          <div className="grid md:grid-cols-4 gap-4">
+            <label className="text-sm">
+              <span className="flowe-muted">Stylist Level</span>
+              <select className="w-full border flowe-border p-2 rounded-xl mt-1" value={level} onChange={e=>setLevel(e.target.value)}>
+                <option value="L1">{hourlyLabel("L1")}</option>
+                <option value="L2">{hourlyLabel("L2")}</option>
+                <option value="L3">{hourlyLabel("L3")}</option>
+              </select>
+            </label>
+
+            <label className="text-sm">
+              <span className="flowe-muted">Length</span>
+              <select className="w-full border flowe-border p-2 rounded-xl mt-1" value={length} onChange={e=>setLength(e.target.value)}>
+                <option value="18">18" (${PRICING.handCraftedKtip.byLength["18"].toFixed(2)}/piece)</option>
+                <option value="20">20" (${PRICING.handCraftedKtip.byLength["20"].toFixed(2)}/piece)</option>
+                <option value="22">22" (${PRICING.handCraftedKtip.byLength["22"].toFixed(2)}/piece)</option>
+              </select>
+              <p className="text-[11px] flowe-muted mt-1">Hair price is 2x standard K-tip.</p>
+            </label>
+
+            <div>
+              <input type="range" min="0" max="360" value={pieces} onChange={e=>setPieces(parseInt(e.target.value)||0)} className="w-full"/>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-xs flowe-muted">Pieces:</span>
+                <input type="number" min="0" max="360" value={pieces} onChange={e=>setPieces(parseInt(e.target.value)||0)} className="w-24 border flowe-border rounded-xl px-2 py-1 text-sm" inputMode="numeric"/>
+              </div>
+            </div>
+
+            <div className="border flowe-border p-3 rounded-xl">
+              <Stat label="Install Hours" value={`${installHours.toFixed(1)}h`} />
+              <Stat label="Crafting Hours" value={`${craftingHours.toFixed(1)}h`} />
+              <div className="text-xs flowe-muted mt-1">60 pcs/hr crafting</div>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-4 gap-4">
+            <div className="border flowe-border p-3 rounded-xl">
+              <Stat label="Install Labor" value={fmt(installLabor)} />
+            </div>
+            <div className="border flowe-border p-3 rounded-xl">
+              <Stat label="Crafting Labor" value={fmt(craftingLabor)} />
+            </div>
+            <div className="border flowe-border p-3 rounded-xl">
+              <Stat label="Hair (2x)" value={fmt(hair)} />
+            </div>
+            <div className={`border bg-black text-white p-3 rounded-xl ${pieces===0 ? 'opacity-40' : ''}`}>
+              <Stat label="Total" value={fmt(total)} />
+            </div>
+          </div>
+
+          <div className="flex justify-end"><CopyButton getText={quoteText} disabled={!pieces} /></div>
+        </div>
+      );
+    };
+
     /* ========= MAINTENANCE ========= */
     const Maintenance = () => {
       const [rows, setRows] = useState(1); // default 1 row
@@ -287,6 +395,15 @@
           <div className="grid md:grid-cols-3 gap-6 items-start">
             <KTipSnapshot />
             <div className="md:col-span-2"><KTipCalculator /></div>
+          </div>
+        </section>
+
+        {/* Hand-Crafted K-Tip */}
+        <section>
+          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight flowe-serif mb-2">Hand-Crafted K-Tip Services</h2>
+          <p className="flowe-muted mb-4">Custom hand-crafted extensions with <b>2x hair price</b> and additional crafting time (60 pieces/hr).</p>
+          <div className="grid gap-6">
+            <HandCraftedKTipCalculator />
           </div>
         </section>
 
