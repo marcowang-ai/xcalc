@@ -68,7 +68,6 @@
     );
 
     const hourlyLabel = (lvl) => `Level ${lvl.slice(1)} ($${HOURLY[lvl]}/hr)`;
-    const weftLabel = (len) => `${len}" ($${WEFT_PRICE[len]}/weft)`;
     const ktipLabel = (len) => `${len}" ($${PRICING.ktip.byLength[len].toFixed(2)}/piece)`;
 
     const CopyButton = ({ getText, disabled=false }) => {
@@ -243,138 +242,6 @@
       );
     };
 
-    /* ========= WEFTS SNAPSHOT ========= */
-    const WeftsSnapshot = () => (
-      <div className="card p-5 space-y-4">
-        <div>
-          <h3 className="font-semibold flowe-serif text-lg mb-1">Pricing Snapshot</h3>
-          <ul className="text-sm flowe-muted list-disc pl-5 space-y-1">
-            <li><span className="font-medium text-black">Hair:</span> ${WEFT_PRICE["18"]}/weft (18") · ${WEFT_PRICE["24"]}/weft (24")</li>
-            <li>Sold by total wefts; placement customized per guest.</li>
-          </ul>
-        </div>
-
-        <div>
-          <h4 className="text-sm font-semibold mb-2">Reference Guide</h4>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left flowe-muted border-b flowe-border">
-                  <th className="py-2 pr-4">Wefts</th>
-                  <th className="py-2 pr-4">Time</th>
-                  <th className="py-2">Label</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-b flowe-border"><td className="py-2 pr-4">3</td><td className="py-2 pr-4"><b>~1 h</b></td><td className="py-2">Mini volume</td></tr>
-                <tr className="border-b flowe-border"><td className="py-2 pr-4">6</td><td className="py-2 pr-4"><b>~2 h</b></td><td className="py-2">Volume & length</td></tr>
-                <tr className="border-b flowe-border"><td className="py-2 pr-4">9</td><td className="py-2 pr-4"><b>~3 h</b></td><td className="py-2">Full volume & length</td></tr>
-                <tr><td className="py-2 pr-4">12</td><td className="py-2 pr-4"><b>~4 h</b></td><td className="py-2">Mega volume & length</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="text-xs flowe-muted">
-          Example: <b>L1, 6 wefts (18")</b> → Labor 2.0 h × $85/hr = $170; Hair 6 × $110 = $660; <b>Total $830</b>.
-        </div>
-      </div>
-    );
-
-    /* ========= WEFTS CALCULATOR ========= */
-    const WeftsCalculator = () => {
-      const [level, setLevel] = useState("L1");
-      const [length, setLength] = useState("18");
-      const [totalWefts, setTotalWefts] = useState(0);
-
-      // Every 3 wefts ≈ 1 hour; round up; cap at 4h; 0 → 0h
-      const blocks = Math.ceil((totalWefts || 0) / 3);
-      const hours = totalWefts === 0 ? 0 : clamp(blocks, 1, 4);
-
-      const hair = totalWefts * WEFT_PRICE[length];
-      const labor = hours * HOURLY[level];
-      const total = hair + labor;
-
-      const quoteText = () => [
-        `Wefts — ${length}"`,
-        `${totalWefts} wefts`,
-        `Level ${level} Stylist ($${HOURLY[level]}/hr)`,
-        `Hours ${hours}`,
-        `Hair ${fmt(hair)}`,
-        `Labor ${fmt(labor)}`,
-        `Total ${fmt(total)}`
-      ].join("\n");
-
-      const isZero = totalWefts === 0;
-
-      return (
-        <div className="card p-5 space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="font-semibold flowe-serif text-lg">Wefts Calculator</h3>
-            <span className="pill">Guide: 3 wefts ≈ 1h</span>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-4 items-end">
-            <label className="block text-sm">
-              <span className="flowe-muted">Stylist Level</span>
-              <select className="w-full border flowe-border p-2 rounded-xl mt-1" value={level} onChange={e=>setLevel(e.target.value)}>
-                <option value="L1">{hourlyLabel("L1")}</option>
-                <option value="L2">{hourlyLabel("L2")}</option>
-                <option value="L3">{hourlyLabel("L3")}</option>
-              </select>
-            </label>
-
-            <label className="block text-sm">
-              <span className="flowe-muted">Total Wefts</span>
-              <input
-                type="range" min="0" max="12" step="1"
-                value={clamp(totalWefts, 0, 12)}
-                onChange={(e) => setTotalWefts(parseInt(e.target.value, 10) || 0)}
-                className="w-full mt-2"
-              />
-              <div className="flex items-center gap-2 mt-2">
-                <span className="text-xs flowe-muted">Wefts:</span>
-                <input
-                  type="number" min="0" max="24" value={totalWefts}
-                  onChange={(e) => setTotalWefts(clamp(parseInt(e.target.value, 10) || 0, 0, 24))}
-                  className="w-24 border flowe-border rounded-xl px-2 py-1 text-sm"
-                  inputMode="numeric"
-                />
-                <span className="text-xs flowe-muted">(slider 0–12; input allows 0–24)</span>
-              </div>
-            </label>
-
-            <label className="block text-sm">
-              <span className="flowe-muted">Length</span>
-              <select className="w-full border flowe-border p-2 rounded-xl mt-1" value={length} onChange={e=>setLength(e.target.value)}>
-                <option value="18">{weftLabel("18")}</option>
-                <option value="24">{weftLabel("24")}</option>
-              </select>
-            </label>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="border flowe-border p-3 rounded-xl">
-              <Stat label="Total Wefts" value={totalWefts} />
-              <Stat label="Hair Cost" value={fmt(hair)} />
-              <div className="text-xs flowe-muted mt-1">{length}" @ ${WEFT_PRICE[length]}/weft</div>
-            </div>
-            <div className="border flowe-border p-3 rounded-xl">
-              <Stat label="Labor" value={fmt(labor)} />
-              <div className="text-xs flowe-muted mt-1">Level {level.slice(1)} @ ${HOURLY[level]}/hr × {hours}h</div>
-            </div>
-            <div className={`border bg-black text-white p-3 rounded-xl ${isZero ? 'opacity-40' : ''}`}>
-              <Stat label="Total" value={fmt(total)} />
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-            <CopyButton getText={quoteText} disabled={isZero} />
-          </div>
-        </div>
-      );
-    };
-
     /* ========= MAINTENANCE ========= */
     const Maintenance = () => {
       const [rows, setRows] = useState(1); // default 1 row
@@ -420,16 +287,6 @@
           <div className="grid md:grid-cols-3 gap-6 items-start">
             <KTipSnapshot />
             <div className="md:col-span-2"><KTipCalculator /></div>
-          </div>
-        </section>
-
-        {/* Wefts */}
-        <section>
-          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight flowe-serif mb-2">Wefts</h2>
-          <p className="flowe-muted mb-4">Ultra-thin Genius wefts for seamless, weight-balanced installs.</p>
-          <div className="grid md:grid-cols-3 gap-6 items-start">
-            <WeftsSnapshot />
-            <div className="md:col-span-2"><WeftsCalculator /></div>
           </div>
         </section>
 
