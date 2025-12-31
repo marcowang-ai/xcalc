@@ -176,9 +176,9 @@
         return Math.ceil(raw * 2) / 2;
       }, [pieces]);
 
-      const isAlaCarte = pieces > 0 && pieces < 60;
       const perPiece = PRICING.ktip.byLength[length];
-      const hair = pieces * perPiece;[level];
+      const hair = pieces * perPiece;
+      const labor = estHours * HOURLY[level];
       const total = hair + labor;
 
       const quoteText = () => [
